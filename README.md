@@ -167,7 +167,7 @@ For checking whether a schema exists, we'll use `Database.hasSchema()`:
   db.hasSchema("schema", function(error, exists) { ... });
   ```
 
-### Dropping schemas (only * Type 2 drivers*)
+### Dropping schemas (only *Type 2 drivers*)
 
 For dropping a schema, to use `Database.dropSchema()`:
 

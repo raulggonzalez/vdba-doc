@@ -212,7 +212,7 @@ but the user can work with columns of these types with no problem.
 In the near future, the following types will be supported too:
 
   - `list<integer>` or `array<integer>`.
-  - `list<text>` to `array<text>`.
+  - `list<text>` or `array<text>`.
   - `json`.
 
 For creating a table, we can use `Database.createTable()` or `Schema.createTable()`. Some examples:
@@ -350,7 +350,7 @@ The update operators are:
   - `{column: {$set: value}}`: column = value.
   - `{column: {$inc: value}}`: column = column + value.
   - `{column: {$dec: value}}`: column = column - value.
-  - `{column: {$add: value}}`: Adds the value to the set.
+  - `{column: {$add: value}}`: set = set + value; text = text || value; number = number + value.
   - `{column: {$del: value}}`: Deletes the value from the set.
 
 ## Conditional expressions

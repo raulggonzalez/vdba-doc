@@ -352,6 +352,7 @@ The update operators are:
   - `{column: {$dec: value}}`: column = column - value.
   - `{column: {$add: value}}`: set = set + value; text = text || value; number = number + value.
   - `{column: {$del: value}}`: Deletes the value from the set.
+  - `{column: {$mul: value}}`: column = column * value.
 
 ## Conditional expressions
 

@@ -17,7 +17,7 @@ When designing the API, we have beared in mind the following features:
     the driver must do. So, for example, SQLite doesn't support the array columns, but the
     driver allows to work with array columns.
   - The users must be able to work with JOINs. If the database engine doesn't support,
-    the driver must do. So, for example, C\* and MongoDB doesn't support this operation, but
+    the driver must do. So, for example, C\* and MongoDB don't support this operation, but
     their drivers must do.
   - The users must be able to work with schemas. If the database engine doesn't support,
     the driver must do.

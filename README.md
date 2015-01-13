@@ -10,9 +10,17 @@ When designing the API, we have beared in mind the following features:
 
   - Two specifications: one for DQL and DML commands and the other for DQL, DML and DDL.
   - Improve the development of applications independent from the database engine. An application
-    developed using the VDBA must work with a engine or another without changes.
+    developed using the VDBA must work with an engine or another without changes.
   - Improve the unit testing of databases, without another testing frameworks specific from the
     database engine.
+  - The users must be able to work with array columns. If the database engine doesn't support,
+    the driver must do. So, for example, SQLite doesn't support the array columns, but the
+    driver allows to work with array columns.
+  - The users must be able to work with JOINs. If the database engine doesn't support,
+    the driver must do. So, for example, C\* and MongoDB doesn't support this operation, but
+    their drivers must do.
+  - The users must be able to work with schemas. If the database engine doesn't support,
+    the driver must do.
 
 ## Importing the driver package
 
@@ -21,13 +29,13 @@ The VDBA specification has two types:
   - **Type 1**. The drivers implementing this specification can run DQL and DML commands.
   - **Type 2**. The drivers implementing this specification can run DQL, DML and DDL commands.
 
-Generally, the users use the *Type 1* specification. The `Type 1` is lighter and this must be used
+Generally, the users use the *Type 1* specification. The *Type 1* is lighter and this must be used
 whenever possible.
 
 By convention, the drivers must follow the following pattern: `dbms-typeX-vdba-driver`.
 Some examples:
 
-  - C*: `cassandra-type1-vdba-driver` and `cassandra-type2-vdba-driver`.
+  - C\*: `cassandra-type1-vdba-driver` and `cassandra-type2-vdba-driver`.
   - PostgreSQL: `postgresql-type1-vdba-driver` and `postgresql-type2-vdba-driver`.
   - Redis: `redis-type1-vdba-driver` and `redis-type2-vdba-driver`.
   - SQLite: `sqlite-type1-vdba-driver` and `sqlite-type2-vdba-driver`.
@@ -121,7 +129,7 @@ the `Connection.open()` method. For example:
 
 ## Closing the connection
 
-We have to call the method `Connection.close()`:
+We have to call the `Connection.close()` method:
 
   ```
   cx.close();
@@ -282,7 +290,7 @@ For dropping a table:
 ## Inserting data
 
 For inserting new rows into the tables, we will use the `Table.insert()` method. This method
-can insert one row or several rows.
+can insert one or several rows.
 
 Examples for inserting one row:
 
@@ -529,5 +537,254 @@ Example:
         console.log("Row #", i, ":", result.rows[i]);
       }
     }
+  });
+  ```
+
+## Aggregations
+
+The aggregations are very similar to SQL. Remember that if a DB engine doesn't support the aggregations,
+the driver must do.
+
+The aggregations are done in two steps:
+
+  1. Call to the `Query.group()` method or the `Table.group()` method.
+  2. Call to the aggregate methods from the `Query` class: `sum()`, `count()`, `min()`...
+
+### Specifying group
+
+The first thing to do is call the `group()` method to indicate how to group the rows:
+
+  ```
+  qry.group("col");
+  qry.group(["col1", "col2"]);
+
+  tbl.group("col");
+  tbl.group(["col1", "col2"]);
+  ```
+
+The `Table.group()` method is similar to:
+
+  ```
+  var qry = tbl.query();
+  qry.group(...);
+  ```
+
+Signatures:
+
+  ```
+  group(column)
+  group(column, callback)
+  group(columns)
+  group(columns, callback)
+  ```
+
+The methods return the query for chaining if needed.
+
+### Specifying aggregate functions
+
+Once the query is aggregate, the next step is to indicate the aggregate functions, using
+the following methods of the `Query` class:
+
+  - `count()`
+  - `sum()`
+  - `min()`
+  - `max()`
+  - `avg()`
+
+Example:
+
+  ```
+  session.group("userId").count().find(function(error, result) {
+    ...
+  });
+  ```
+
+#### `count()`
+
+The `count()` signatures are:
+
+  ```
+  count()
+  count(callback)
+  count(column)
+  count(column, callback)
+  count(column, alias)
+  count(column, alias, callback)
+  count(column, filter)
+  count(column, filter, callback)
+  count(column, alias, filter)
+  count(column, alias, filter, callback)
+  ```
+
+When an alias is specified, the result column is named with the alias; otherwise, the result
+column will be `count`. For example:
+
+  ```
+  q.count("*", "total");
+  ```
+
+If a callback is specified, the function runs the query. It is similar to:
+
+  ```
+  q.count(...);
+  q.find(callback);
+  ```
+
+If a filter specified, the query will filter the group rows with aggregate value
+to comply the condition. For example, to filter the users who's opened more than five connections:
+
+  ```
+  var q = session.group(["userId", "username"]);
+  q.count("*", {value: {$ge: 5}}).find(function(error, result) {
+    ...
+  });
+  ```
+
+In the condition, we must always use `value` in the filter object, regardless of the result column name.
+
+#### `sum()`
+
+The `sum()` signatures are:
+
+  ```
+  sum(column)
+  sum(column, callback)
+  sum(column, alias)
+  sum(column, alias, callback)
+  sum(column, filter)
+  sum(column, filter, callback)
+  sum(column, alias, filter)
+  sum(column, alias, filter, callback)
+  ```
+
+If no alias specified, the result column will name as `sum`.
+
+Examples:
+
+  ```
+  q.sum("minutes", "total", function(error, result) { ... });
+  q.sum("minutes", "total").find(error, result) { ... });
+
+  q.sum("minutes", "total", {value: {$gt: 60}}, function(error, result) { ... });
+  q.sum("minutes", "total", {value: {$gt: 60}}).find(function(error, result) { ... });
+  ```
+
+### `min()` and `max()`
+
+The signatures of both are:
+
+  ```
+  min(column)
+  min(column, callback)
+  min(column, alias)
+  min(column, alias, callback)
+  min(column, filter)
+  min(column, filter, callback)
+  min(column, alias, filter)
+  min(column, alias, filter, callback)
+
+  max(column)
+  max(column, callback)
+  max(column, alias)
+  max(column, alias, callback)
+  max(column, filter)
+  max(column, filter, callback)
+  max(column, alias, filter)
+  max(column, alias, filter, callback)
+  ```
+
+### `avg()`
+
+The signatures of this aggregate operation are:
+
+```
+  avg(column)
+  avg(column, callback)
+  avg(column, alias)
+  avg(column, alias, callback)
+  avg(column, filter)
+  avg(column, filter, callback)
+  avg(column, alias, filter)
+  avg(column, alias, filter, callback)
+  ```
+
+### Examples
+
+Next, we're going to illustrate some examples to understand better the aggregation
+framework.
+
+We will assume the following:
+
+  ```
+  User table:
+  {userId: 1, username: "user01", password: "pwd01"}
+  {userId: 2, username: "user02", password: "pwd02"}
+  {userId: 3, username: "user03", password: "pwd03"}
+
+  Session table:
+  {sessionId: 1, userId: 1, login: new Date("2015-01-13"), minutes: 10},
+  {sessionId: 2, userId: 2, login: new Date("2015-01-13"), minutes: 5},
+  {sessionId: 3, userId: 3, login: new Date("2015-01-14"), minutes: 1}
+  {sessionId: 4, userId: 1, login: new Date("2015-01-14"), minutes: 2}
+  ```
+
+If we want to get the number of sessions opened by each user:
+
+  ```
+  var q = user.query();
+  q.join("auth.session", "userId");
+  q.group(["userId", "username"]);
+  q.count("*", "total").find(function(error, result) { ... });
+  ```
+
+The result will be:
+
+  ```
+  {userId: 1, username: "user01", total: 3}
+  {userId: 2, username: "user02", total: 1}
+  {userId: 3, username: "user03", total: 1}
+  ```
+
+If we don't use alias:
+
+  ```
+  {userId: 1, username: "user01", count: 3}
+  {userId: 2, username: "user02", count: 1}
+  {userId: 3, username: "user03", count: 1}
+  ```
+
+If we want to get the users who have opened two or more connections:
+
+  ```
+  var q = user.join("auth.session", "userId");
+  q.group(["userId", "username"]).count({value: {$gt: 1}).find(function(error, result) {
+    ...
+  });
+  ```
+
+If we want to get the number of connections and the sum of time:
+
+  ```
+  var q = user.join("auth.session", "userId");
+  q.group(["userId", "username"]);
+  q.count("*", "sessions").sum("minutes", "time").find(function(error, result) {
+    ...
+  });
+  ```
+
+The result of this last query will be:
+
+  ```
+  {userId: 1, username: "user01", sessions: 3, time: 12}
+  {userId: 2, username: "user02", sessions: 1, time: 5}
+  {userId: 3, username: "user03", sessions: 1, time: 2}
+  ```
+
+Finally, for getting the info of those users connected more than once and more than 10 minutes:
+
+  ```
+  var q = user.join("auth.session", "userId").group(["userId", "username"]);
+  q.count("*", {value: {$gt: 1}}).sum("minutes", {value: {$gt: 10}}).find(function(error, result) {
+    ...
   });
   ```

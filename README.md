@@ -229,9 +229,9 @@ For creating a table, we can use `Database.createTable()` or `Schema.createTable
   var schema = "sec";
   var table = "User";
   var columns = {
-    userId: {type: "sequence", pk: true},
-    username: {type: "text", uq: true, nullable: false},
-    password: {type: "text", nullable: false},
+    userId: {type: "sequence", id: true},
+    username: {type: "text", uq: true, required: true},
+    password: {type: "text", required: true},
     tags: "set<text>"
   };
   var options = {};
@@ -247,9 +247,9 @@ The columns are specified with an object, where each property is the column name
 its value contains the column info:
 
   - `type` (String). The data type: `blob`, `boolean`, `date`, `datime`...
-  - `pk` or `primaryKey` (Boolean). Whether the column is the PK.
+  - `id` (Boolean). Whether the column is the primary key.
   - `uq` or `unique` (Boolean). Whether the column has a unique index.
-  - `nullable` (Boolean). Whether the column is nullable.
+  - `required` (Boolean). Whether the column is required; otherwise, optional.
   - `default` (String). The default expression.
   - `check` (String). A check constraint.
   - `ref` (String). For defining foreign keys, we use the `ref` option: `[schema.]table.column`.

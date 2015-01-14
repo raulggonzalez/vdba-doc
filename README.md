@@ -1,30 +1,30 @@
 # VDBA
 
 `VDBA` (Valencia Database API) is an asynchronous API for the JavaScript language
-that programmers can use to access data such as databases.
+for accessing data by the same way as for accessing databases.
 The VDBA philosophy is similar to the `Node.js` API's.
 
 ## VDBA features
 
 When designing the API, we have beared in mind the following features:
 
-  - Two specifications: one for DQL and DML commands and the other for DQL, DML and DDL.
-  - Improve the development of applications independent from the database engine. An application
-    developed using the VDBA must work with an engine or another without changes.
-  - Improve the unit testing of databases, without another testing frameworks specific from the
+  - Two specifications: one for DQL and DML commands and the other one for DQL, DML and DDL.
+  - Improving the development of applications independent from the database engine. An application
+    developed using the VDBA must work with every database engine without doing specific changes.
+  - Improving the unit testing of databases without another specific testing frameworks from the
     database engine.
-  - The users must be able to work with array columns. If the database engine doesn't support,
-    the driver must do. So, for example, SQLite doesn't support the array columns, but the
-    driver allows to work with array columns.
-  - The users must be able to work with JOINs. If the database engine doesn't support,
-    the driver must do. So, for example, C\* and MongoDB don't support this operation, but
-    their drivers must do.
-  - The users must be able to work with schemas. If the database engine doesn't support,
-    the driver must do.
+  - Users must be able to work with array columns. If the database engine does not support this feature,
+    the driver must do it. So, for example, SQLite does not support the array columns feature, but the
+    driver allows to work with this.
+  - Users must be able to work with JOIN sentences. If the database engine does not support this feature,
+    the driver must do it. So, for example, C\* and MongoDB do not support this type of operations, but
+    their drivers do it.
+  - Users must be able to work with schemas. If the database engine does not support it,
+    the driver must do it.
 
 ## Importing the driver package
 
-The VDBA specification has two types:
+The VDBA has two specification types:
 
   - **Type 1**. The drivers implementing this specification can run DQL and DML commands.
   - **Type 2**. The drivers implementing this specification can run DQL, DML and DDL commands.

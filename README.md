@@ -22,7 +22,23 @@ When designing the API, we have beared in mind the following features:
   - Users must be able to work with schemas. If the database engine does not support it,
     the driver must do it.
 
-## Importing the driver package
+## Table of contents
+
+[Drivers](#drivers)<br>
+[Connections](#connections)<br>
+[Getting the current database](#getting-the-current-database)<br>
+[Schemas](#schemas)<br>
+[Tables](#tables)<br>
+[Inserting data](#inserting-data)<br>
+[Deleting data](#deleting-data)<br>
+[Updating data](#updating-data)<br>
+[Conditional expressions](#conditional-expressions)<br>
+[Finding data](#finding-data)<br>
+[Result](#result)<br>
+[Aggregations](#aggregations)<br>
+[ORM](#orm)
+
+## Drivers
 
 The VDBA has two specification types:
 
@@ -42,7 +58,7 @@ Some examples:
 
 The application must install the package to fulfill its need.
 
-## Including the driver package
+### Including the driver package
 
 Once imported the driver package, next we must include the driver in our application.
 By convention, we associate the `vdba` name to the import. For example:
@@ -51,7 +67,7 @@ By convention, we associate the `vdba` name to the import. For example:
   var vdba = require("sqlite-type1-vdba-driver");
   ```
 
-### Including the SQLite driver package
+#### Including the SQLite driver package
 
 SQLite has two implementations:
 
@@ -65,7 +81,7 @@ Next, some include examples:
   var vdba = require("sqlite-type2-vdba-driver");
   ```
 
-## Getting the driver
+### Getting the driver
 
 First of all, we have to get the driver, using the `getDriver()` function of the
 `Driver` class. The driver names are:
@@ -75,7 +91,7 @@ First of all, we have to get the driver, using the `getDriver()` function of the
   - `SQLite` for SQLite.
   - `Redis` for Redis.
 
-### Getting SQLite driver
+#### Getting SQLite driver
 
 Example:
 
@@ -83,7 +99,9 @@ Example:
   var drv = vdba.Driver.getDriver("SQLite");
   ```
 
-## Getting the connection
+## Connections
+
+### Getting the connection
 
 Once we have the driver, the next thing is getting the connection. Each driver has
 its own options, being the following standard:
@@ -106,7 +124,7 @@ We have to use the `Driver.createConnection()` method for a closed connection or
   });
   ```
 
-### Getting a SQLite connection
+#### Getting a SQLite connection
 
 The SQLite connection options are: `database`, the database file path; `mode`, the connection mode.
 
@@ -117,7 +135,7 @@ Example:
   var cx = drv.createConnection({database: "data/mydb.db", mode: "readwrite"});
   ```
 
-## Opening the connection
+### Opening the connection
 
 If we have used the `Driver.createConnection()`, we have to open the connection using
 the `Connection.open()` method. For example:
@@ -127,7 +145,7 @@ the `Connection.open()` method. For example:
   cx.open(function(error) { ... });
   ```
 
-## Closing the connection
+### Closing the connection
 
 We have to call the `Connection.close()` method:
 
@@ -456,29 +474,6 @@ Example of inner join (sec.user inner join sec.session on sec.user.userId = sec.
 
 The table that creates the query is known as **source table**. The other table as **target table**.
 
-Sometimes, the target info is wanted as an object. For these ocassions, we can use the
-`Query.joinoo()` method; joinoo is equal to *join one-to-one*:
-
-  ```
-  q.joinoo("sec.session", "userId").find(function(error, result) { ... });
-  ```
-
-The query will return an object that will contain the target info in a property with the
-target table. For example, something like:
-
-  ```
-  {
-    userId: 1,
-    username: "user01",
-    password: "pwd01",
-    session: {
-      sessionId: 123,
-      userId: 1,
-      login: new Date("2015-01-13")
-    }
-  }
-  ```
-
 The `join()` method returns something like:
 
   ```
@@ -788,3 +783,151 @@ Finally, for getting the info of those users connected more than once and more t
     ...
   });
   ```
+## ORM
+
+VDBA has a simple but very powerful ORM. This ORM is built with the `getPersistentSchema()` function.
+The classes must implement this function (or static method) to indicate the table schema.
+The function must return an object with the following properties:
+
+  - `schema` (String). The schema name.
+  - `table` (String). The table name.
+  - `columns` (Object). The table columns.
+  - `relationships` (Object). The relationships.
+
+Example:
+
+  ```
+  /////////////
+  // User.js //
+  /////////////
+  function User() {
+
+  }
+
+  User.getPersistentSchema = function getPersistentSchema() {
+    return {
+      schema: "auth",
+      table: "user",
+      columns: {
+        userId: {type: "integer", id: true, seq: true},
+        username: {type: "text", uq: true, required: true},
+        password: {type: "text", required: true},
+        createDate: {type: "date", required: true},
+        enabled: {type: "boolean", required: true}
+      },
+      relationships: {
+        profile: {type: "1-1", schema: "auth", table: "profile"},
+        sessions: {type: "1-*", schema: "auth", table: "session"}
+      }
+    };
+  };
+
+  ////////////////
+  // Profile.js //
+  ////////////////
+  function Profile() {
+
+  }
+
+  Profile.getPersistentSchema = function getPersistentSchema() {
+    return {
+      schema: "auth",
+      table: "profile",
+      columns: {
+        userId: {type: "integer", id: true, ref: "auth.user.userId"},
+        nick: "text",
+        emails: {type: "set<text>"}
+      }
+    };
+  };
+
+  ////////////////
+  // Session.js //
+  ////////////////
+  function Session() {
+
+  }
+
+  Session.getPersistentSchema = function getPersistentSchema() {
+    return {
+      schema: "auth",
+      table: "session",
+      columns: {
+        sessionId: {type: "integer", id: true, seq: true},
+        userId: {type: "integer", required: true, ref: "auth.user.userId"},
+        login: {type: "datetime", required: true},
+        clickedArticles: {type: "set<integer>"},
+        minutes: {type: "real"}
+      }
+    };
+  };
+  ```
+
+### Creating tables
+
+We create the tables with the `createTable()` method. So far, we have indicated
+the schema name, the table name and the columns explicitly; but if we want, we can also indicate
+its ORM class, e.g.:
+
+  ```
+  db.createTable(User, function(error) { ... });
+  ```
+
+First, the method invokes the `getPersistentSchema()` function of the class and, next, with the
+returned schema, it creates the table. It is similar to:
+
+  ```
+  var sch = User.getPersistentSchema();
+  db.createTable(sch.schema, sch.table, sch.columns, function(error) { ... });
+  ```
+
+### Finding tables
+
+If we want to get the rows as ORM-class instances instead of objects simply, we need to find
+the tables using the ORM class:
+
+  ```
+  db.findTable(User, function(error, tbl) { ... });
+  ```
+
+From this moment, any queries created by the table will return the rows as instances
+of the ORM class.
+
+For example, whether we want the User and Profile info, we have to run the following query:
+
+  ```
+  user.join(profile, function(error, result) { ... });
+  ```
+
+The result will be like:
+
+  ```
+  {userId: 1, username: "user01", password: "pwd01", profile: {userId: 1, emails: [...], nick: "u01"}},
+  {userId: 2, username: "user02", password: "pwd02", profile: {userId: 2, emails: [...], nick: "u02"}},
+  ...
+  ```
+
+### The `createInstance()` function
+
+The ORM classes can also define the `createInstance()` function. This static method aims to cast a row into
+an ORM class instance. Its signature is:
+
+  ```
+  createInstance(row) : Instance
+  ```
+
+Example:
+
+  ```
+  function User(userId, username, password) {
+    this.userId = userId;
+    this.username = username;
+    this.password = password;
+  }
+
+  User.createInstance = function(row) {
+    return new User(row.userid, row.username, row.password);
+  };
+  ```
+
+If the function is not specified, the driver will create the instance.
